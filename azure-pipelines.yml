@@ -1,19 +1,55 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
 - main
 
-pool:
-  vmImage: ubuntu-latest
+variables:
+  # Azure Resource Manager connection created during pipeline creation
+  azureSubscription: 'your-subscription-name'
+  appServiceName: 'KM-APPS'
+  resourceGroupName: 'KM-RG-NE'
+  location: 'northeurope'
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs:
+  - job: Build
+    displayName: Build job
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: Restore
+      inputs:
+        command: 'restore'
+        projects: '**/*.csproj'
+    - task: DotNetCoreCLI@2
+      displayName: Build
+      inputs:
+        command: 'build'
+        projects: '**/*.csproj'
+        arguments: '--configuration Release'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: Build
+  jobs:
+  - deployment: DeploymentJob
+    displayName: Deploy job
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment:
+      name: 'km-dev'
+      resourceType: 'VirtualMachine'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Azure Web App Deploy: km-apps'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appName: '$(appServiceName)'
+              package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
+              resourceGroupName: '$(resourceGroupName)'
+              slotName: 'production'
+
