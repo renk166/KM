@@ -30,7 +30,7 @@ steps:
 - task: AzureWebApp@1
   displayName: 'Azure Web App Deploy: $(kmapps)'
   inputs:
-    azureSubscription: '$(azureSubscription)'
+    azureSubscription: '$(6fdcd202-4d3e-4856-9f72-ca770e9e165e)'
     appType: 'webAppLinux'
     appName: '$(kmapps)'
     package: '$(Pipeline.Workspace)/drop'
